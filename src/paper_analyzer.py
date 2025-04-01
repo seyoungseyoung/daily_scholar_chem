@@ -141,11 +141,26 @@ Always format your response according to the specified format in the prompt."""
     
     def _translate_abstract(self, abstract: str) -> str:
         """초록을 한국어로 번역합니다."""
-        translation_response = self._call_api(
-            ANALYSIS_PROMPTS["translation"].format(abstract=abstract),
-            model="deepseek-chat"
-        )
-        return self._clean_response(translation_response)
+        print("한국어 번역 중...")
+        
+        prompt = f"""다음은 논문 초록을 한국어로 번역하는 요구사항입니다:
+
+1. 번역 대상: 다음 영문 초록을 한국어로 번역해주세요.
+2. 번역 규칙:
+   - 모든 전문 용어는 원문(영어)을 병기하고 <strong>태그로 강조 표시합니다. (예: 분리 배치 정규화(<strong>Separated Batch Normalization, SeBN</strong>))
+   - 의미 단위로 개행해 가독성을 높입니다.
+   - '-입니다' 체계를 유지하며 자연스러운 전문성을 확보합니다.
+   - 모델명, 기술, 성능 지표 등은 <strong>태그로 굵게 표시해 시각적 강조를 적용합니다.
+
+영문 초록:
+{abstract}
+
+한국어 번역:"""
+        
+        response = self._call_api(prompt, model="deepseek-chat")
+        
+        print("번역 완료")
+        return response
 
     def _analyze_paper_content(self, title: str, abstract: str) -> Dict[str, Any]:
         """논문 내용을 분석합니다."""
