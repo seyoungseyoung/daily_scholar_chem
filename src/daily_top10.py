@@ -10,6 +10,7 @@ from rank_papers import PaperQualityAnalyzer
 from paper_analyzer import PaperAnalyzer
 from analysis_manager import AnalysisManager
 import json
+from src.services.email_sender import EmailSender
 
 def get_specific_date_papers(target_date: str) -> List[Dict]:
     # UTC 기준으로 특정 날짜 계산
@@ -90,102 +91,42 @@ def save_top10(papers: List[Dict], analyzer: PaperQualityAnalyzer):
     return top10
 
 def analyze_and_generate_report(papers: List[Dict], target_date: str):
-    # 논문 품질 분석기 초기화
-    analyzer = PaperQualityAnalyzer()
+    """논문을 분석하고 보고서를 생성합니다."""
+    print("논문 분석 중...")
     
-    # Top 10 추출
-    top10 = save_top10(papers, analyzer)
+    # Create necessary directories
+    os.makedirs("data/analysis", exist_ok=True)
+    os.makedirs("config", exist_ok=True)
     
-    # 논문 분석기 초기화
-    paper_analyzer = PaperAnalyzer()
+    # Initialize email sender
+    email_sender = EmailSender()
     
-    # 분석 결과를 JSON 형식으로 변환
-    papers_json = []
-    for i, paper in enumerate(papers):
-        if paper.entry_id in [p['url'] for p in top10]:
-            # Result 객체를 딕셔너리로 변환
-            paper_dict = {
-                "title": paper.title,
-                "abstract": paper.summary,
-                "paper_id": paper.entry_id.split("/")[-1],
-                "authors": [author.name for author in paper.authors],
-                "submission_date": paper.published.strftime('%Y-%m-%d'),
-                "categories": paper.categories,
-                "pdf_url": paper.pdf_url,
-                "html_url": paper.entry_id,
-                "local_pdf_path": "",
-                "local_text_path": ""
-            }
-            
-            # 논문 분석 수행
-            print(f"\n논문 분석 중: {paper_dict['title']}")
-            analysis_results = paper_analyzer.analyze_paper(paper_dict)
-            print(f"분석 완료: {paper_dict['title']}")
-            
-            # 카테고리 분류
-            categories = paper.categories
-            classification = {
-                'is_ai': 'cs.AI' in categories,
-                'is_cv': 'cs.CV' in categories,
-                'is_nlp': 'cs.CL' in categories,
-                'is_robotics': 'cs.RO' in categories,
-                'is_ml': 'cs.LG' in categories
-            }
-            
-            # 태그 생성 (카테고리 기반)
-            category_tags = []
-            if classification['is_ai']:
-                category_tags.append('AI')
-            if classification['is_cv']:
-                category_tags.append('Computer Vision')
-            if classification['is_nlp']:
-                category_tags.append('NLP')
-            if classification['is_robotics']:
-                category_tags.append('Robotics')
-            if classification['is_ml']:
-                category_tags.append('Machine Learning')
-            
-            # DeepSeek 태그 가져오기
-            deepseek_tags = analysis_results.get('tags', [])
-            
-            # 모든 태그 통합
-            all_tags = list(set(category_tags + deepseek_tags))  # 중복 제거
-            
-            papers_json.append({
-                'paper_id': paper_dict['paper_id'],
-                'title': paper_dict['title'],
-                'authors': paper_dict['authors'],
-                'abstract': paper_dict['abstract'],
-                'submission_date': paper_dict['submission_date'],
-                'categories': paper_dict['categories'],
-                'pdf_url': paper_dict['pdf_url'],
-                'html_url': paper_dict['html_url'],
-                'local_pdf_path': paper_dict['local_pdf_path'],
-                'local_html_path': paper_dict['local_text_path'],
-                'classification': classification,  # AnalysisManager를 위해 유지
-                'tags': all_tags,  # 통합된 태그 사용
-                'analysis_results': analysis_results,
-                'summary': analysis_results.get('summary', ''),
-                'translation': analysis_results.get('translation', {})
-            })
+    # Analyze papers
+    analysis_results = []
+    for paper in papers:
+        print(f"\n논문 분석 시작: {paper['title']}")
+        analysis_results.append(paper_analyzer.analyze_paper(paper))
+        print(f"분석 완료: {paper['title']}")
     
-    # 분석 결과 저장
-    os.makedirs('data/analysis', exist_ok=True)
-    timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-    analysis_file = f'data/analysis/analysis_results_{timestamp}.json'
+    # Save analysis results
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    analysis_file = f"data/analysis/analysis_results_{timestamp}.json"
     
-    with open(analysis_file, 'w', encoding='utf-8') as f:
-        json.dump(papers_json, f, ensure_ascii=False, indent=2)
-    
-    print("\nHTML 보고서 생성 중...")
-    
-    # HTML 보고서 생성
-    report_file = f'data/analysis/report_{timestamp}.html'
-    manager = AnalysisManager()
-    manager.process_papers(papers_json)
+    with open(analysis_file, "w", encoding="utf-8") as f:
+        json.dump(analysis_results, f, ensure_ascii=False, indent=2)
     
     print(f"\n분석 결과가 저장되었습니다: {analysis_file}")
+    
+    # Generate HTML report
+    print("\nHTML 보고서 생성 중...")
+    report_file = analysis_manager.generate_report(analysis_results)
     print(f"HTML 보고서가 생성되었습니다: {report_file}")
+    
+    # Send email report
+    print("\n이메일 발송 중...")
+    email_sender.send_report(analysis_results)
+    
+    return analysis_results
 
 def run_daily_top10():
     try:

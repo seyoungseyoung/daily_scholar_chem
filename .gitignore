@@ -33,6 +33,11 @@ ENV/
 
 # Project specific
 data/database/
+data/analysis/
+data/daily_top10/
+data/papers/
+data/rankings/
+data/text/
 logs/
 .env
 
