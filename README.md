@@ -1,77 +1,89 @@
 # DailyAI Scholar
 
-arXiv의 최신 AI/CS 논문을 자동으로 수집하고 DeepSeek AI를 통해 정리하여 제공하는 서비스입니다.
+[![Python Version](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![arXiv](https://img.shields.io/badge/arXiv-cs.AI-red.svg)](https://arxiv.org/list/cs.AI/recent)
 
-## 주요 기능
+An intelligent system for daily analysis and ranking of AI research papers from arXiv.
 
-- arXiv CS 섹션의 최신 논문 자동 수집
-- DeepSeek AI를 활용한 논문 요약 및 정리
-- 카테고리별 논문 분류 및 필터링
-- PDF 및 HTML 형식의 논문 제공
+## 🌟 Features
 
-## 설치 방법
+- **Automated Paper Collection**: Daily fetching of AI research papers from arXiv
+- **Smart Ranking System**: Quality-based paper ranking using multiple metrics
+- **Comprehensive Analysis**: Detailed paper analysis including:
+  - Quality scoring
+  - Category classification
+  - Key insights extraction
+  - Korean translation
+- **Beautiful Reports**: Generate elegant HTML reports with paper summaries
+- **Database Integration**: Store and manage paper data efficiently
 
-1. 저장소 클론
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Python 3.11 or higher
+- pip (Python package manager)
+
+### Installation
+
+1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/DailyAI_Scholar.git
+git clone https://github.com/Kororu-lab/DailyAI_Scholar.git
 cd DailyAI_Scholar
 ```
 
-2. 가상환경 생성 및 활성화
-```bash
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# 또는
-.\venv\Scripts\activate  # Windows
-```
-
-3. 의존성 설치
+2. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-4. 환경 변수 설정
+3. Set up environment variables:
 ```bash
 cp .env.example .env
-# .env 파일을 열고 필요한 설정을 입력하세요
+# Edit .env with your configuration
 ```
 
-## 사용 방법
+### Usage
 
-1. 논문 수집 실행
+1. Run the daily paper collection:
 ```bash
-python src/main.py collect
+python src/daily_top10.py
 ```
 
-2. 논문 요약 실행
+2. Generate paper rankings:
 ```bash
-python src/main.py summarize
+python src/rank_papers.py
 ```
 
-## 프로젝트 구조
+## 📊 Project Structure
 
 ```
 DailyAI_Scholar/
-├── src/                # 소스 코드
-│   ├── models/        # 데이터 모델
-│   ├── services/      # 비즈니스 로직
-│   ├── database/      # 데이터베이스 관련
-│   └── utils/         # 유틸리티 함수
-├── tests/             # 테스트 코드
-├── data/              # 데이터 저장소
-│   └── database/      # SQLite 데이터베이스
-├── logs/              # 로그 파일
-└── requirements.txt   # 의존성 목록
+├── src/
+│   ├── analysis_manager.py    # Analysis report generation
+│   ├── daily_top10.py        # Daily paper collection
+│   ├── paper_analyzer.py     # Paper analysis logic
+│   ├── rank_papers.py       # Paper ranking system
+│   └── services/            # External service integrations
+├── data/                    # Data storage (gitignored)
+├── requirements.txt         # Project dependencies
+└── README.md               # Project documentation
 ```
 
-## 기여하기
+## 🤝 Contributing
 
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-## 라이선스
+## 📝 License
 
-이 프로젝트는 MIT 라이선스를 따릅니다. 자세한 내용은 [LICENSE](LICENSE) 파일을 참조하세요. 
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- arXiv API for providing access to research papers
+- All contributors and maintainers
+
+---
+
+Made with ❤️ by Kororu Lab 
