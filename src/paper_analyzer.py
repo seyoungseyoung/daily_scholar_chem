@@ -218,7 +218,7 @@ Always format your response according to the specified format in the prompt."""
         
         # 결과 반환
         result = {
-            "paper_id": paper.get("paper_id", ""),
+            "paper_id": paper["url"],
             "title": paper["title"],
             **analysis_result,
             "translation": translation,

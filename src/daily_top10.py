@@ -12,6 +12,10 @@ from analysis_manager import AnalysisManager
 import json
 from src.services.email_sender import EmailSender
 
+# Initialize analyzers
+paper_analyzer = PaperAnalyzer()
+analysis_manager = AnalysisManager()
+
 def get_specific_date_papers(target_date: str) -> List[Dict]:
     # UTC 기준으로 특정 날짜 계산
     target_start = datetime.datetime.strptime(target_date, '%Y-%m-%d').replace(tzinfo=pytz.UTC)
@@ -98,14 +102,21 @@ def analyze_and_generate_report(papers: List[Dict], target_date: str):
     os.makedirs("data/analysis", exist_ok=True)
     os.makedirs("config", exist_ok=True)
     
-    # Initialize email sender
-    email_sender = EmailSender()
+    # Initialize analyzers
+    analyzer = PaperQualityAnalyzer()
+    
+    # Get top 10 papers
+    top10_papers = save_top10(papers, analyzer)
     
     # Analyze papers
     analysis_results = []
-    for paper in papers:
+    for paper in top10_papers:
         print(f"\n논문 분석 시작: {paper['title']}")
-        analysis_results.append(paper_analyzer.analyze_paper(paper))
+        result = paper_analyzer.analyze_paper(paper)
+        # Add submission_date and html_url to result
+        result['submission_date'] = paper['published']
+        result['html_url'] = paper['url']
+        analysis_results.append(result)
         print(f"분석 완료: {paper['title']}")
     
     # Save analysis results
@@ -124,14 +135,19 @@ def analyze_and_generate_report(papers: List[Dict], target_date: str):
     
     # Send email report
     print("\n이메일 발송 중...")
+    email_sender = EmailSender()
     email_sender.send_report(analysis_results)
     
     return analysis_results
 
 def run_daily_top10():
     try:
-        # 3/31 논문 가져오기
-        target_date = '2025-03-31'
+        # UTC 기준으로 전날 날짜 계산
+        utc = pytz.UTC
+        today = datetime.datetime.now(utc)
+        yesterday = today - datetime.timedelta(days=1)
+        target_date = yesterday.strftime('%Y-%m-%d')
+        
         print(f"{target_date}의 cs.AI 논문을 가져오는 중...")
         papers = get_specific_date_papers(target_date)
         print(f"총 {len(papers)}개의 논문을 가져왔습니다.")

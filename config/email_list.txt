@@ -1,4 +1,1 @@
-# Add one email address per line
-# Lines starting with # are comments
-# Example:
-# example@email.com 
+chch0926@gmail.com
