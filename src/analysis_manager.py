@@ -499,7 +499,7 @@ class AnalysisManager:
                 }}
                 
                 strong {{
-                    color: #e74c3c;
+                    color: #333;
                     font-weight: 600;
                 }}
                 
