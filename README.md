@@ -2,7 +2,6 @@
 
 [![Python Version](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![arXiv](https://img.shields.io/badge/arXiv-cs.AI-red.svg)](https://arxiv.org/list/cs.AI/recent)
 
 An intelligent system for daily analysis and ranking of AI research papers from arXiv.
 
@@ -17,6 +16,7 @@ An intelligent system for daily analysis and ranking of AI research papers from 
   - Korean translation
 - **Beautiful Reports**: Generate elegant HTML reports with paper summaries
 - **Database Integration**: Store and manage paper data efficiently
+- **Scheduled Execution**: Automatic daily runs at 3:00 AM KST
 
 ## 🚀 Getting Started
 
@@ -46,6 +46,8 @@ cp .env.example .env
 
 ### Usage
 
+#### Manual Execution
+
 1. Run the daily paper collection:
 ```bash
 python src/daily_top10.py
@@ -55,6 +57,23 @@ python src/daily_top10.py
 ```bash
 python src/rank_papers.py
 ```
+
+#### Automated Daily Execution
+
+The project includes a scheduler script that runs automatically at 3:00 AM KST:
+
+```bash
+# Run immediately
+./run_daily.sh --now
+
+# Schedule for next 3:00 AM KST
+./run_daily.sh
+```
+
+The scheduler will:
+- Run immediately if current time is before 3:00 AM KST
+- Schedule for next day if current time is after 3:00 AM KST
+- Automatically run every 24 hours after the initial execution
 
 ## 📊 Project Structure
 
@@ -68,6 +87,7 @@ DailyAI_Scholar/
 │   └── services/            # External service integrations
 ├── data/                    # Data storage (gitignored)
 ├── requirements.txt         # Project dependencies
+├── run_daily.sh           # Daily scheduler script
 └── README.md               # Project documentation
 ```
 
@@ -86,4 +106,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-Made with ❤️ by Kororu Lab 
+Kororu-Lab 
