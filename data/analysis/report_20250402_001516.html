@@ -1,0 +1,249 @@
+
+        <!DOCTYPE html>
+        <html lang="ko">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>논문 분석 보고서</title>
+            <style>
+                body {
+                    font-family: 'Noto Sans KR', sans-serif;
+                    line-height: 1.6;
+                    color: #333;
+                    max-width: 1200px;
+                    margin: 0 auto;
+                    padding: 20px;
+                    background-color: #f5f5f5;
+                }
+                
+                .container {
+                    background-color: white;
+                    padding: 30px;
+                    border-radius: 10px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                }
+                
+                h1 {
+                    color: #2c3e50;
+                    border-bottom: 2px solid #3498db;
+                    padding-bottom: 10px;
+                    margin-bottom: 30px;
+                }
+                
+                h2 {
+                    color: #34495e;
+                    margin-top: 30px;
+                    padding-bottom: 5px;
+                    border-bottom: 1px solid #eee;
+                }
+                
+                h3 {
+                    color: #7f8c8d;
+                    margin-top: 20px;
+                }
+                
+                .paper {
+                    margin-bottom: 40px;
+                    padding: 20px;
+                    border: 1px solid #eee;
+                    border-radius: 5px;
+                    background-color: #fff;
+                }
+                
+                .paper:hover {
+                    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+                    transition: box-shadow 0.3s ease;
+                }
+                
+                .paper-title {
+                    font-size: 1.4em;
+                    color: #2c3e50;
+                    margin-bottom: 15px;
+                    font-weight: bold;
+                }
+                
+                .paper-classification {
+                    display: inline-block;
+                    background-color: #3498db;
+                    color: white;
+                    padding: 5px 10px;
+                    border-radius: 15px;
+                    font-size: 0.9em;
+                    margin-bottom: 15px;
+                }
+                
+                .paper-tags {
+                    margin: 15px 0;
+                }
+                
+                .tag {
+                    display: inline-block;
+                    background-color: #ecf0f1;
+                    color: #7f8c8d;
+                    padding: 3px 8px;
+                    border-radius: 12px;
+                    font-size: 0.85em;
+                    margin: 3px;
+                    cursor: pointer;
+                    transition: background-color 0.3s ease;
+                }
+                
+                .tag:hover {
+                    background-color: #bdc3c7;
+                    color: #2c3e50;
+                }
+                
+                .paper-summary {
+                    margin: 20px 0;
+                    padding: 15px;
+                    background-color: #f8f9fa;
+                    border-radius: 5px;
+                }
+                
+                .paper-translation {
+                    margin: 20px 0;
+                    padding: 15px;
+                    background-color: #f8f9fa;
+                    border-radius: 5px;
+                    border-left: 4px solid #3498db;
+                }
+                
+                strong {
+                    color: #333;
+                    font-weight: 600;
+                }
+                
+                blockquote {
+                    margin: 15px 0;
+                    padding: 10px 20px;
+                    border-left: 4px solid #3498db;
+                    background-color: #f8f9fa;
+                    color: #666;
+                }
+                
+                hr {
+                    border: none;
+                    border-top: 1px solid #eee;
+                    margin: 20px 0;
+                }
+                
+                p {
+                    margin: 10px 0;
+                }
+                
+                @media (max-width: 768px) {
+                    body {
+                        padding: 10px;
+                    }
+                    
+                    .container {
+                        padding: 15px;
+                    }
+                    
+                    .paper {
+                        padding: 15px;
+                    }
+                    
+                    .paper-title {
+                        font-size: 1.2em;
+                    }
+                }
+                
+                .paper-actions {
+                    margin: 15px 0;
+                    display: flex;
+                    gap: 10px;
+                }
+                
+                .paper-link {
+                    display: inline-flex;
+                    align-items: center;
+                    padding: 8px 15px;
+                    background-color: #3498db;
+                    color: white;
+                    text-decoration: none;
+                    border-radius: 5px;
+                    font-size: 0.9em;
+                    transition: background-color 0.3s ease;
+                }
+                
+                .paper-link:hover {
+                    background-color: #2980b9;
+                }
+                
+                .section-header {
+                    color: #2c3e50;
+                    font-size: 1.2em;
+                    margin: 20px 0 10px;
+                    padding-bottom: 5px;
+                    border-bottom: 1px solid #eee;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>논문 분석 보고서</h1>
+                <p>분석된 논문 수: 1</p>
+                
+                
+            <div class="paper">
+                <div class="paper-title">Pro-Routing: Proactive Routing of Autonomous Multi-Capacity Robots for Pickup-and-Delivery Tasks</div>
+                <div class="paper-classification">{'is_ai': True, 'is_cv': False, 'is_nlp': False, 'is_robotics': True, 'is_ml': False}</div>
+                <div class="paper-tags">
+                    <span class="tag">Proactive Routing Framework</span><span class="tag">Real-Time Demand Adaptation</span><span class="tag">Multi-Capacity Robots</span><span class="tag">Fleet Sizing Algorithm</span><span class="tag">Robotics</span><span class="tag">Pickup-and-Delivery Systems</span><span class="tag">Autonomous Transportation Services</span><span class="tag">Provable Stability Guarantees</span><span class="tag">Proactive Rollout Algorithms</span><span class="tag">AI</span>
+                </div>
+                <div class="paper-summary">
+                    <p>[연구의 중요성과 배경] • 이 연구가 필요한 이유 - 실생활 연관성: <strong>멀티 캐퍼시티 로봇<strong>(여러 화물/승객 동시 수송 가능)을 활용한 택배 서비스나 대학 셔틀 시스템과 같은 실시간 수요 대응 시스템에 적용 가능합니다. 예를 들어, 하버드 대학의 밤 시간대 셔틀 서비스는 사전 예약과 실시간 요청을 동시에 처리해야 합니다. - 기술적 필요성: 기존 시스템은 사전 계획만 가능하거나 실시간 요청을 처리할 때 <strong>안정성<strong>(시스템 비용이 시간에 따라 무한히 증가하지 않는 특성)을 보장하지 못했습니다.</p>
+<p>• 현재까지의 한계점 - 기존 기술의 문제점: 오프라인 최적화 방식은 실시간 요청을 반영할 수 없고, 실시간 처리 알고리즘은 안정성 이론적 보장이 부족했습니다. - 해결해야 할 과제: 실시간 요청을 처리하면서도 안정성을 수학적으로 증명할 수 있는 라우팅 프레임워크 개발이 필요했습니다.</p>
+<p>• 이 연구의 혁신적인 점 - 주요 기여: <strong>프로액티브 롤아웃 기반 라우팅<strong> 프레임워크를 제안해 실시간 수요에 적응하면서도 안정성을 유지합니다. - 기술적 혁신: 로봇 대수 결정 알고리즘을 통해 안정성을 보장할 수 있는 최소 규모의 차량 대수를 자동으로 산정합니다.</p>
+<p>[주요 내용과 방법] • 핵심 아이디어 - 기본 개념: 미래 수요를 예측하고, 현재 상태에서 가능한 최적 경로를 <strong>롤아웃 기법<strong>(다단계 의사결정 최적화)으로 실시간 업데이트합니다. - 차별화 포인트: 안정성 수학적 증명과 실시간 처리 기능을 동시에 달성한 최초의 접근법입니다.</p>
+<p>• 구체적인 방법 - 주요 단계: 1. <strong>안정성 보장 차량 대수 계산<strong>: 로봇 대수를 이론적으로 결정해 시스템 과부하 방지 2. 실시간 요청 발생 시, 예측 모델을 기반으로 경로 재계획 3. 몬테카를로 트리 탐색(MCTS)보다 효율적인 의사결정 프레임워크 구축 - 구현 방식: 하버드 대학 밴 시스템 데이터를 활용해 실제 환경에서 검증했습니다.</p>
+<p>• 주요 기술적 특징 - 핵심 기술: <strong>부분 관측 마르코프 결정 과정(POMDP)<strong>을 확장한 동적 라우팅 모델 - 성능 개선점: 기존 탐욕 알고리즘 대비 요청 처리량 <strong>6% 증가<strong>, 대기 시간 중간값 <strong>33% 감소<strong></p>
+<p>[기대되는 효과와 기여점] • 성능 향상 수치 - 정량적 개선: 이론적 계산으로 도출한 충분한 대수의 차량 사용 시 안정성 100% 보장. 실제 배포 중인 소규모 차량 대수에서도 요청 처리량 6% 향상. - 비교 결과: MCTS 기반 알고리즘보다 계산 시간 50% 단축.</p>
+<p>• 실제 적용 가능성 - 응용 분야: 대학 캠퍼스 셔틀, 자율주행 택시 풀, 물류 창고 로봇 시스템 - 활용 사례: 하버드 대학 밴 시스템에 적용 시, 1일 평균 <strong>1,200건<strong>의 요청 효율적 처리 가능</p>
+<p>• 미래 발전 방향 - 개선 가능성: 차량 대수 산정 알고리즘에 에너지 효율성 요소 추가 - 연구 과제: 초대규모 시스템(1,000대 이상 로봇)으로의 확장성 검증 필요</p>
+                </div>
+                <div class="paper-translation">
+                    <h3>다음은 AI가 번역한 영문 초록입니다:</h3>
+                    다음은 전문적인 학술 용어와 강조 표시를 적용한 한국어 번역입니다:
+
+<strong>다중 로봇</strong>(<strong>multi-robot</strong>) 환경을 고려하였으며,  
+공간적으로 분산된 <strong>픽업-배달 요청</strong>(<strong>pickup-and-delivery requests</strong>)을  
+고정된 최대 대기 시간 내에 처리해야 하는 <strong>다중 수용 능력 자율 로봇</strong>(<strong>multi-capacity autonomous robots</strong>) 플릿을 연구 대상으로 합니다.  
+
+요청은 사전에 예약되거나 실시간으로 시스템에 진입할 수 있습니다.  
+이 환경에서 <strong>라우팅 정책</strong>(<strong>routing policy</strong>)의 안정성은  
+시간에 따라 정책 비용이 균일하게 제한되는 것으로 정의됩니다.  
+
+기존 연구는 오프라인 문제 해결을 통해 이론적 안정성을 유지하거나,  
+안정성에 대한 이론적 보장을 희생하면서 동적 요청을 처리하는 방식에 집중했습니다.  
+본 논문은 이 간극을 해소하기 위해  
+실시간 수요에 적응하면서도 학습된 라우팅 정책의 안정성을 검증 가능하게 유지하는  
+<strong>사전 대응형 롤아웃 기반 라우팅 프레임워크</strong>(<strong>proactive rollout-based routing framework</strong>)를 제안합니다.  
+
+구조적으로 안정성을 보장하기 위해 충분히 큰 플릿 크기를 산출하는  
+<strong>플릿 사이징 알고리즘</strong>(<strong>fleet sizing algorithm</strong>)을 도입하여  
+이론적 안정성 보장을 유도합니다.  
+
+이론적 결과 검증을 위해  
+<strong>하버드 밴 시스템</strong>(<strong>Harvard's evening Van System</strong>)의 실제 승차 요청 사례를 분석하였으며,  
+현재 배포된 소규모 플릿에서의 성능도 평가했습니다.  
+
+소규모 환경에서는 현재 배포된 라우팅 알고리즘, <strong>탐욕적 휴리스틱</strong>(<strong>greedy heuristics</strong>),  
+<strong>몬테카를로 트리 탐색</strong>(<strong>Monte-Carlo-Tree-Search</strong>) 기반 알고리즘과 비교했습니다.  
+
+실험 결과, 우리의 프레임워크는  
+이론적으로 도출된 충분한 플릿 크기에서 안정성을 유지했습니다.  
+현재 배포된 작은 플릿 크기에서는  
+가장 성능이 좋은 베이스라인 대비 6% 더 많은 요청을 처리하면서  
+승객 중간 대기 시간을 33% 단축했습니다.
+                </div>
+                <div class="paper-actions">
+                    <a href="https://arxiv.org/abs/2503.24325v1" target="_blank" class="paper-link">논문 보기</a>
+                </div>
+            </div>
+            
+            </div>
+        </body>
+        </html>
+        

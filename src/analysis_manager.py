@@ -320,11 +320,17 @@ class AnalysisManager:
                 "<div class='section'>",
                 "<h3>한국어 번역</h3>",
                 "<div class='translation-section'>",
-                paper['translation'].replace('\n', '</p><p>'),
+                paper['translation'] if isinstance(paper['translation'], str) else paper['translation'].get('abstract', ''),
                 "</div>",
                 "</div>",
                 "<div class='paper-actions'>",
                 f"<a href='https://arxiv.org/abs/{paper['paper_id']}' target='_blank' class='paper-link'>논문 보기</a>",
+                "</div>",
+                "<div class='paper-meta'>",
+                f"<div class='tags'>",
+                "".join([f"<span class='tag'>{tag}</span>" for tag in paper['tags']]),
+                "</div>",
+                f"<div class='paper-date'>{paper['submission_date']}</div>",
                 "</div>",
                 "</div>"
             ])
@@ -370,20 +376,21 @@ class AnalysisManager:
             paper_link = f"https://arxiv.org/abs/{paper['paper_id']}" if paper['paper_id'] else "#"
             papers_html += f"""
             <div class="paper">
-                <div class="paper-title">{paper['title']}</div>
-                <div class="paper-classification">{paper['classification']}</div>
-                <div class="paper-tags">
+                <h2 class="title">{paper['title']}</h2>
+                <div class="tags">
                     {''.join([f'<span class="tag">{tag}</span>' for tag in paper['tags']])}
                 </div>
-                <div class="paper-summary">
+                <div class="summary-section">
+                    <h3>요약</h3>
                     {paper['summary']}
                 </div>
-                <div class="paper-translation">
-                    <h3>다음은 AI가 번역한 영문 초록입니다:</h3>
-                    {paper['translation']}
+                <div class="translation-section">
+                    <h3>한국어 번역</h3>
+                    {paper['translation'] if isinstance(paper['translation'], str) else paper['translation'].get('abstract', '')}
                 </div>
-                <div class="paper-actions">
-                    <a href="{paper_link}" target="_blank" class="paper-link">논문 보기</a>
+                <div class="paper-meta">
+                    <div class="paper-date">{paper['submission_date']}</div>
+                    <a href="{paper['html_url']}" target="_blank" class="paper-link">논문 보기</a>
                 </div>
             </div>
             """

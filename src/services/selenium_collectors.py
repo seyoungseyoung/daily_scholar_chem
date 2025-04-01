@@ -1,4 +1,7 @@
 import logging
+import os
+import time
+import requests
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any
 from selenium import webdriver
@@ -7,7 +10,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, StaleElementReferenceException
-from src.models.news import News
+import pandas as pd
+from ..models.news import News
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +19,8 @@ class SeleniumBaseCollector:
     def __init__(self, url: str):
         self.url = url
         self.driver = None
+        self.download_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data', 'papers')
+        os.makedirs(self.download_dir, exist_ok=True)
 
     def setup_driver(self):
         chrome_options = Options()
@@ -23,6 +29,12 @@ class SeleniumBaseCollector:
         chrome_options.add_argument('--disable-dev-shm-usage')
         chrome_options.add_argument('--disable-gpu')
         chrome_options.add_argument('--window-size=1920,1080')
+        chrome_options.add_experimental_option('prefs', {
+            'download.default_directory': self.download_dir,
+            'download.prompt_for_download': False,
+            'download.directory_upgrade': True,
+            'safebrowsing.enabled': True
+        })
         self.driver = webdriver.Chrome(options=chrome_options)
 
     def wait_for_element(self, by: By, value: str, timeout: int = 10):
@@ -42,6 +54,21 @@ class SeleniumBaseCollector:
         except StaleElementReferenceException:
             return ""
 
+    def download_pdf(self, url: str, filename: str) -> bool:
+        try:
+            response = requests.get(url, stream=True)
+            response.raise_for_status()
+            
+            filepath = os.path.join(self.download_dir, filename)
+            with open(filepath, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+            return True
+        except Exception as e:
+            logger.error(f"PDF 다운로드 중 오류 발생: {str(e)}")
+            return False
+
     def cleanup(self):
         if self.driver:
             self.driver.quit()
@@ -49,7 +76,7 @@ class SeleniumBaseCollector:
 class ArxivCSCollector(SeleniumBaseCollector):
     def __init__(self):
         super().__init__("https://arxiv.org/list/cs/recent")
-        self.max_papers = 50  # 최대 50개의 논문 수집 (2페이지)
+        self.max_papers = 3  # 테스트를 위해 3개로 제한
         self.target_categories = [
             'cs.AI', 'cs.CV', 'cs.LG', 'cs.CL', 'cs.NE', 
             'cs.IR', 'cs.ML', 'cs.RO', 'cs.SE', 'cs.SY'
@@ -141,6 +168,12 @@ class ArxivCSCollector(SeleniumBaseCollector):
                 source_url = self.driver.find_element(By.CSS_SELECTOR, "a[href*='/source/']").get_attribute("href")
             except NoSuchElementException:
                 pass
+
+            # PDF 다운로드
+            if pdf_url:
+                paper_id = url.split('/')[-1]
+                filename = f"{paper_id}.pdf"
+                self.download_pdf(pdf_url, filename)
             
             return {
                 "title": title,
@@ -159,7 +192,7 @@ class ArxivCSCollector(SeleniumBaseCollector):
         finally:
             self.cleanup()
 
-    def collect(self) -> List[News]:
+    def collect(self) -> List[Dict[str, Any]]:
         """논문 정보 수집"""
         try:
             # 논문 링크 수집
@@ -169,7 +202,7 @@ class ArxivCSCollector(SeleniumBaseCollector):
                 return []
             
             # 논문 상세 정보 수집
-            news_items = []
+            papers = []
             one_week_ago = datetime.now() - timedelta(days=7)
             
             for url in paper_links:
@@ -185,19 +218,10 @@ class ArxivCSCollector(SeleniumBaseCollector):
                 if details.get("submission_date") and details["submission_date"] < one_week_ago:
                     continue
                 
-                news_items.append(News(
-                    title=details["title"],
-                    url=url,
-                    author=details["authors"],
-                    abstract=details["abstract"],
-                    created_at=details.get("submission_date", datetime.now()),
-                    categories=details.get("categories", []),
-                    pdf_url=details.get("pdf_url"),
-                    html_url=details.get("html_url"),
-                    source_url=details.get("source_url")
-                ))
+                papers.append(details)
+                time.sleep(1)  # 서버 부하 방지
             
-            return news_items
+            return papers
             
         except Exception as e:
             logger.error(f"논문 수집 중 오류: {str(e)}")
