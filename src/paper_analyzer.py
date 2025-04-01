@@ -159,6 +159,10 @@ Always format your response according to the specified format in the prompt."""
         
         response = self._call_api(prompt, model="deepseek-chat")
         
+        # 번역 규칙 부분 제거
+        if "번역 규칙" in response:
+            response = response.split("번역 규칙")[0].strip()
+        
         print("번역 완료")
         return response
 
