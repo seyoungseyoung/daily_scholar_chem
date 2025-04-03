@@ -34,10 +34,14 @@ def get_specific_date_papers(target_date: str) -> List[Dict]:
     papers = []
     try:
         for paper in client.results(search):
+            # target_end보다 이후의 논문은 건너뛰기
+            if paper.published >= target_end:
+                continue
+            # target_start보다 이전의 논문은 더 이상 볼 필요 없음
             if paper.published < target_start:
                 break
-            if target_start <= paper.published < target_end:
-                papers.append(paper)
+            # target_start와 target_end 사이의 논문만 수집
+            papers.append(paper)
             time.sleep(0.1)
     except Exception as e:
         print(f"논문 수집 중 오류 발생: {e}")
