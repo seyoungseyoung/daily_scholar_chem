@@ -1,13 +1,20 @@
 import arxiv
 import datetime
-from typing import List, Dict
+from typing import List, Dict, Any
 import pandas as pd
 import pytz
 import time
 import os
+import logging
+from paper_analyzer import PaperAnalyzer
+
+# 로깅 설정
+logger = logging.getLogger('rank_papers')
 
 class PaperQualityAnalyzer:
     def __init__(self):
+        self.logger = logging.getLogger(__name__)
+        self.paper_analyzer = PaperAnalyzer()
         self.quality_indicators = {
             'author_metrics': 0.3,    # 저자 관련 지표
             'paper_metrics': 0.3,     # 논문 특성 지표
@@ -15,26 +22,53 @@ class PaperQualityAnalyzer:
             'content_metrics': 0.2    # 내용 관련 지표
         }
     
-    def analyze_paper(self, paper) -> float:
-        score = 0
-        
-        # 저자 관련 점수
-        author_score = self._calculate_author_score(paper)
-        score += author_score * self.quality_indicators['author_metrics']
-        
-        # 논문 특성 점수
-        paper_score = self._calculate_paper_score(paper)
-        score += paper_score * self.quality_indicators['paper_metrics']
-        
-        # 시간 관련 점수
-        time_score = self._calculate_time_score(paper)
-        score += time_score * self.quality_indicators['time_metrics']
-        
-        # 내용 관련 점수
-        content_score = self._calculate_content_score(paper)
-        score += content_score * self.quality_indicators['content_metrics']
-        
-        return score
+    def analyze_paper(self, paper: Dict) -> float:
+        try:
+            score = 0.0
+            
+            # 1. 저자 수 점수 (최대 2점)
+            authors = paper.get('authors', [])
+            if isinstance(authors, list):
+                author_count = len(authors)
+            else:
+                author_count = len(authors.split(',')) if isinstance(authors, str) else 0
+            score += min(author_count * 0.2, 2.0)
+            
+            # 2. 카테고리 관련성 점수 (최대 2점)
+            categories = paper.get('categories', [])
+            if isinstance(categories, list):
+                category_count = len(categories)
+            else:
+                category_count = len(categories.split(',')) if isinstance(categories, str) else 0
+            score += min(category_count * 0.4, 2.0)
+            
+            # 3. 키워드 관련성 점수 (최대 2점)
+            keywords = paper.get('keywords', [])
+            if isinstance(keywords, list):
+                keyword_count = len(keywords)
+            else:
+                keyword_count = len(keywords.split(',')) if isinstance(keywords, str) else 0
+            score += min(keyword_count * 0.2, 2.0)
+            
+            # 4. 초록 길이 점수 (최대 2점)
+            abstract = paper.get('abstract', '')
+            if abstract:
+                abstract_length = len(abstract.split())
+                score += min(abstract_length * 0.01, 2.0)
+            
+            # 5. 메트릭 점수 (최대 2점)
+            metrics = paper.get('metrics', {})
+            if metrics:
+                views = metrics.get('abstract_views', 0)
+                downloads = metrics.get('content_downloads', 0)
+                citations = metrics.get('citations', 0)
+                score += min((views * 0.0001 + downloads * 0.0002 + citations * 0.1), 2.0)
+            
+            return round(score, 2)
+            
+        except Exception as e:
+            self.logger.error(f"논문 품질 분석 중 오류 발생: {e}")
+            return 0.0
     
     def _calculate_author_score(self, paper) -> float:
         score = 0
@@ -169,7 +203,7 @@ def main():
     analyzer = PaperQualityAnalyzer()
     
     # 최근 7일간의 논문 가져오기
-    print("최근 7일간의 cs.AI 논문을 가져오는 중...")
+    print("최근 7일간의 CO2RR 논문을 가져오는 중...")
     papers = get_recent_papers()
     print(f"총 {len(papers)}개의 논문을 가져왔습니다.")
     

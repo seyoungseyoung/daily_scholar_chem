@@ -2,32 +2,24 @@ import os
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from dotenv import load_dotenv
+import logging
 from datetime import datetime
 from typing import List, Dict, Any
 
 class EmailSender:
     def __init__(self):
+        load_dotenv()
         self.smtp_server = os.getenv('SMTP_SERVER', 'smtp.gmail.com')
         self.smtp_port = int(os.getenv('SMTP_PORT', '587'))
         self.smtp_username = os.getenv('SMTP_USERNAME')
         self.smtp_password = os.getenv('SMTP_PASSWORD')
         self.sender_email = os.getenv('SMTP_USERNAME')
+        self.recipient_email = os.getenv('SMTP_RECIPIENT')
         
-        # Load recipient list
-        self.recipient_list = self._load_recipient_list()
-    
-    def _load_recipient_list(self) -> List[str]:
-        """Load recipient email addresses from config file."""
-        config_dir = "config"
-        email_file = os.path.join(config_dir, "email_list.txt")
-        
-        if not os.path.exists(email_file):
-            print(f"Warning: {email_file} not found. No emails will be sent.")
-            return []
-        
-        with open(email_file, 'r') as f:
-            return [line.strip() for line in f if line.strip() and not line.startswith('#')]
-    
+        if not all([self.smtp_username, self.smtp_password, self.recipient_email]):
+            raise ValueError("SMTP_USERNAME, SMTP_PASSWORD, and SMTP_RECIPIENT must be set in .env file")
+
     def _create_html_content(self, papers: List[Dict[str, Any]]) -> str:
         """Create HTML content for the email."""
         html = f"""
@@ -50,23 +42,31 @@ class EmailSender:
         """
         
         for paper in papers:
+            # tags가 없는 경우 빈 리스트로 초기화
+            tags = paper.get('analysis', {}).get('tags', [])
+            if not isinstance(tags, list):
+                tags = []
+                
             html += f"""
             <div class="paper">
                 <div class="title">{paper['title']}</div>
                 <div class="tags">
-                    {''.join([f'<span class="tag">{tag}</span>' for tag in paper['tags']])}
+                    {''.join([f'<span class="tag">{tag}</span>' for tag in tags])}
                 </div>
                 <div class="summary">
                     <h3>Summary</h3>
-                    {paper['summary']}
+                    {paper.get('analysis', {}).get('summary', 'No summary available')}
                 </div>
                 <div class="translation">
                     <h3>Korean Translation</h3>
-                    {paper['translation'] if isinstance(paper['translation'], str) else paper['translation'].get('abstract', '')}
+                    <h4>Title</h4>
+                    <p>{paper.get('title_ko', 'No translation available')}</p>
+                    <h4>Abstract</h4>
+                    <p>{paper.get('abstract_ko', 'No translation available')}</p>
                 </div>
                 <div class="meta">
-                    <p>Publication Date: {paper['submission_date']}</p>
-                    <p><a href="{paper['html_url']}" target="_blank">View Paper</a></p>
+                    <p>Publication Date: {paper.get('submission_date', 'N/A')}</p>
+                    {f'<p><a href="{paper["html_url"]}" target="_blank">View Paper</a></p>' if paper.get('html_url') else ''}
                 </div>
             </div>
             """
@@ -77,9 +77,39 @@ class EmailSender:
         """
         return html
     
+    def send_email(self, subject, html_content):
+        """
+        Send an email with the given subject and HTML content.
+        
+        Args:
+            subject (str): Email subject
+            html_content (str): HTML content of the email
+        """
+        try:
+            # Create message
+            msg = MIMEMultipart('alternative')
+            msg['Subject'] = subject
+            msg['From'] = self.sender_email
+            msg['To'] = self.recipient_email
+
+            # Attach HTML content
+            html_part = MIMEText(html_content, 'html')
+            msg.attach(html_part)
+
+            # Send email
+            with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
+                server.starttls()
+                server.login(self.smtp_username, self.smtp_password)
+                server.send_message(msg)
+                logging.info(f"Email sent successfully to {self.recipient_email}")
+
+        except Exception as e:
+            logging.error(f"Failed to send email: {str(e)}")
+            raise
+
     def send_report(self, papers: List[Dict[str, Any]]) -> bool:
         """Send the paper report to all recipients."""
-        if not self.recipient_list:
+        if not self.recipient_email:
             print("No recipients found. Skipping email sending.")
             return False
         
@@ -88,20 +118,9 @@ class EmailSender:
             return False
         
         try:
-            msg = MIMEMultipart('alternative')
-            msg['Subject'] = f"Daily AI Paper Report - {datetime.now().strftime('%Y-%m-%d')}"
-            msg['From'] = self.sender_email
-            msg['To'] = ', '.join(self.recipient_list)
-            
+            subject = f"Daily AI Paper Report - {datetime.now().strftime('%Y-%m-%d')}"
             html_content = self._create_html_content(papers)
-            msg.attach(MIMEText(html_content, 'html'))
-            
-            with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
-                server.starttls()
-                server.login(self.smtp_username, self.smtp_password)
-                server.send_message(msg)
-            
-            print(f"Report sent successfully to {len(self.recipient_list)} recipients")
+            self.send_email(subject, html_content)
             return True
             
         except Exception as e:

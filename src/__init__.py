@@ -1,3 +1,3 @@
 """
-AI 논문 분석 패키지
+DailyAI Scholar 패키지
 """

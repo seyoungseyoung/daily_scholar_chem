@@ -1,14 +1,19 @@
 import json
-import os
+import logging
+from pathlib import Path
 from datetime import datetime
 from typing import List, Dict, Any
-from src.paper_analyzer import PaperAnalyzer
+from paper_analyzer import PaperAnalyzer
+
+# 로깅 설정
+logger = logging.getLogger('analysis_manager')
 
 class AnalysisManager:
     def __init__(self):
-        self.analyzer = PaperAnalyzer()
-        self.results_dir = "data/analysis"
-        os.makedirs(self.results_dir, exist_ok=True)
+        self.paper_analyzer = PaperAnalyzer()
+        self.base_dir = Path(__file__).parent.parent
+        self.analysis_dir = self.base_dir / 'data' / 'analysis'
+        self.analysis_dir.mkdir(parents=True, exist_ok=True)
     
     def load_papers(self, csv_path: str) -> List[Dict[str, Any]]:
         """CSV 파일에서 논문 데이터를 로드합니다."""
@@ -19,7 +24,7 @@ class AnalysisManager:
     def save_analysis(self, results: List[Dict[str, Any]]):
         """분석 결과를 JSON 파일로 저장합니다."""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_path = os.path.join(self.results_dir, f"analysis_{timestamp}.json")
+        output_path = self.analysis_dir / f"analysis_{timestamp}.json"
         
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(results, f, ensure_ascii=False, indent=2)
@@ -261,14 +266,14 @@ class AnalysisManager:
             "<head>",
             "<meta charset='UTF-8'>",
             "<meta name='viewport' content='width=device-width, initial-scale=1.0'>",
-            "<title>AI 논문 분석 보고서</title>",
+            "<title>CO2RR 논문 분석 보고서</title>",
             "<link href='https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap' rel='stylesheet'>",
             f"<style>{css}</style>",
             "</head>",
             "<body>",
             "<div class='container'>",
             "<div class='header'>",
-            "<h1>AI 논문 분석 보고서</h1>",
+            "<h1>CO2RR 논문 분석 보고서</h1>",
             f"<p>생성일: {timestamp}</p>",
             "</div>"
         ]
@@ -344,7 +349,7 @@ class AnalysisManager:
         
         # 파일 저장
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        report_path = os.path.join(self.results_dir, f"report_{timestamp}.html")
+        report_path = self.analysis_dir / f"report_{timestamp}.html"
         
         with open(report_path, 'w', encoding='utf-8') as f:
             f.write(html_content)
@@ -361,7 +366,7 @@ class AnalysisManager:
         
         # 결과 저장
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        report_file = f"data/analysis/report_{timestamp}.html"
+        report_file = self.analysis_dir / f"report_{timestamp}.html"
         
         with open(report_file, "w", encoding="utf-8") as f:
             f.write(html_content)
@@ -586,4 +591,16 @@ class AnalysisManager:
             </div>
         </body>
         </html>
-        """ 
+        """
+
+    def analyze_papers(self, papers: list) -> list:
+        """여러 논문을 분석합니다."""
+        results = []
+        for paper in papers:
+            try:
+                result = self.paper_analyzer.analyze_paper(paper)
+                results.append(result)
+            except Exception as e:
+                logger.error(f"논문 분석 중 오류 발생: {e}")
+                continue
+        return results 

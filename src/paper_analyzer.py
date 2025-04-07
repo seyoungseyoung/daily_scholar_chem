@@ -1,8 +1,23 @@
 import json
 import requests
-from typing import Dict, Any
+from typing import Dict, Any, List
 import time
-from src.config import DEEPSEEK_API_KEY, DEEPSEEK_API_URL, ANALYSIS_PROMPTS
+import logging
+import os
+from pathlib import Path
+from config import DEEPSEEK_API_KEY, DEEPSEEK_API_URL, ANALYSIS_PROMPTS
+from datetime import datetime
+
+# 로깅 설정
+logger = logging.getLogger('paper_analyzer')
+# 기존 핸들러 제거
+for handler in logger.handlers[:]:
+    logger.removeHandler(handler)
+# 새로운 핸들러 추가
+handler = logging.StreamHandler()
+handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+logger.addHandler(handler)
+logger.setLevel(logging.INFO)
 
 class PaperAnalyzer:
     def __init__(self):
@@ -13,6 +28,69 @@ class PaperAnalyzer:
             "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
             "Content-Type": "application/json"
         }
+        
+        # 캐시 디렉토리 설정
+        self.base_dir = Path(__file__).parent.parent.parent
+        self.cache_dir = self.base_dir / 'data' / 'cache'
+        try:
+            self.cache_dir.mkdir(parents=True, exist_ok=True)
+            logger.info(f"캐시 디렉토리가 생성되었습니다: {self.cache_dir}")
+        except Exception as e:
+            logger.error(f"캐시 디렉토리 생성 중 오류 발생: {e}")
+            raise
+        
+        # 메모리 캐시 초기화
+        self.cache = {}
+        logger.info("메모리 캐시가 초기화되었습니다.")
+    
+    def _get_cache_path(self, paper_id: str) -> Path:
+        """캐시 파일 경로를 반환합니다."""
+        return self.cache_dir / f"{paper_id}.json"
+    
+    def _load_from_cache(self, paper_id: str) -> Dict:
+        """캐시에서 논문 분석 결과를 로드합니다."""
+        try:
+            # 메모리 캐시 확인
+            if paper_id in self.cache:
+                logger.debug(f"메모리 캐시에서 논문 {paper_id} 로드")
+                return self.cache[paper_id]
+                
+            # 파일 캐시 확인
+            cache_path = self._get_cache_path(paper_id)
+            if cache_path.exists():
+                with open(cache_path, 'r', encoding='utf-8') as f:
+                    result = json.load(f)
+                    # 메모리 캐시에 저장
+                    self.cache[paper_id] = result
+                    logger.info(f"파일 캐시에서 논문 {paper_id} 로드")
+                    return result
+            logger.debug(f"캐시에 논문 {paper_id} 없음")
+            return None
+            
+        except Exception as e:
+            logger.error(f"캐시 로드 중 오류 발생 (paper_id: {paper_id}): {e}")
+            return None
+    
+    def _save_to_cache(self, paper_id: str, result: Dict):
+        """논문 분석 결과를 캐시에 저장합니다."""
+        try:
+            # datetime 객체를 문자열로 변환
+            serializable_result = result.copy()
+            if isinstance(serializable_result.get('submission_date'), datetime):
+                serializable_result['submission_date'] = serializable_result['submission_date'].strftime('%Y-%m-%d')
+            
+            # 메모리 캐시에 저장
+            self.cache[paper_id] = serializable_result
+            
+            # 파일 캐시에 저장
+            cache_path = self._get_cache_path(paper_id)
+            with open(cache_path, 'w', encoding='utf-8') as f:
+                json.dump(serializable_result, f, ensure_ascii=False, indent=2)
+            logger.info(f"논문 {paper_id} 분석 결과가 캐시에 저장되었습니다")
+            
+        except Exception as e:
+            logger.error(f"캐시 저장 중 오류 발생 (paper_id: {paper_id}): {e}")
+            # 캐시 저장 실패는 치명적 오류가 아니므로 계속 진행
     
     def _call_api(self, prompt: str, model: str = "deepseek-chat") -> str:
         """DeepSeek API를 호출하여 응답을 받아옵니다."""
@@ -150,7 +228,7 @@ Always format your response according to the specified format in the prompt."""
    - 모든 전문 용어는 원문(영어)을 병기하고 <strong>태그로 강조 표시합니다. (예: 분리 배치 정규화(<strong>Separated Batch Normalization, SeBN</strong>))
    - 의미 단위로 개행해 가독성을 높입니다.
    - '-입니다' 체계를 유지하며 자연스러운 전문성을 확보합니다.
-   - 모델명, 기술, 성능 지표 등은 <strong>태그로 굵게 표시해 시각적 강조를 적용합니다.
+   - 핵심물질, 실험방법, 성능 지표 등은 <strong>태그로 굵게 표시해 시각적 강조를 적용합니다.
 
 영문 초록:
 {abstract}
@@ -202,36 +280,107 @@ Always format your response according to the specified format in the prompt."""
             "summary": summary
         }
     
-    def analyze_paper(self, paper: Dict[str, Any]) -> Dict[str, Any]:
-        """논문을 분석하고 결과를 반환합니다."""
-        print(f"\n논문 분석 시작: {paper['title']}")
-        
-        # 번역 생성
-        print("한국어 번역 중...")
-        translation = self._translate_abstract(paper["abstract"])
-        print("번역 완료")
-        
-        # 논문 내용 분석
-        print("논문 내용 분석 중...")
-        analysis_result = self._analyze_paper_content(paper["title"], paper["abstract"])
-        print("분석 완료")
-        
-        # 결과 반환
-        result = {
-            "paper_id": paper["url"],
-            "title": paper["title"],
-            **analysis_result,
-            "translation": translation,
-            "original_abstract": paper["abstract"]
-        }
-        
-        print(f"논문 분석 완료: {paper['title']}")
-        return result
+    def analyze_paper(self, paper: Dict) -> Dict:
+        """단일 논문 분석"""
+        try:
+            # 논문 ID 추출
+            paper_id = paper.get("id", "")
+            if not paper_id:
+                raise ValueError("논문 ID가 없습니다.")
+            
+            # 캐시 확인
+            cached_result = self._load_from_cache(paper_id)
+            if cached_result:
+                logger.info(f"캐시에서 논문 분석 결과를 로드했습니다: {paper['title']}")
+                return cached_result
+            
+            logger.info(f"\n논문 분석 시작: {paper['title']}")
+            
+            # URL 처리
+            html_url = paper.get("html_url", "")
+            if not html_url and "url" in paper:
+                html_url = paper["url"]
+            
+            result = {
+                "paper_id": paper_id,
+                "title": paper["title"],
+                "authors": paper["authors"],
+                "abstract": paper["abstract"],
+                "submission_date": paper["submission_date"].strftime("%Y-%m-%d"),
+                "categories": paper["categories"],
+                "pdf_url": paper.get("pdf_url", ""),
+                "html_url": html_url,
+                "pdf_text": paper.get("pdf_text", ""),
+                "html_text": paper.get("html_text", "")
+            }
+            
+            # 한국어 번역
+            logger.info("한국어 번역 중...")
+            result["title_ko"] = self._translate_abstract(result["title"])
+            result["abstract_ko"] = self._translate_abstract(result["abstract"])
+            logger.info("번역 완료")
+            
+            # 논문 내용 분석
+            logger.info("논문 내용 분석 중...")
+            result["analysis"] = self._analyze_paper_content(result["title"], result["abstract"])
+            logger.info("분석 완료")
+            
+            # 캐시에 저장
+            self._save_to_cache(paper_id, result)
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"논문 분석 중 오류 발생: {e}")
+            raise
     
-    def analyze_papers(self, papers: list) -> list:
+    def analyze_papers(self, papers: List[Dict]) -> List[Dict]:
         """여러 논문을 분석합니다."""
-        results = []
-        for paper in papers:
-            result = self.analyze_paper(paper)
-            results.append(result)
-        return results 
+        try:
+            analyzed_papers = []
+            for paper in papers:
+                # 논문 ID 추출
+                paper_id = paper.get("id", "")
+                if not paper_id:
+                    logger.warning(f"논문 ID가 없습니다: {paper['title']}")
+                    continue
+                
+                # 캐시 확인
+                cached_result = self._load_from_cache(paper_id)
+                if cached_result:
+                    logger.info(f"캐시에서 논문 분석 결과를 로드했습니다: {paper['title']}")
+                    analyzed_papers.append(cached_result)
+                    continue
+                
+                # 논문 분석
+                logger.info(f"\n논문 분석 시작: {paper['title']}")
+                
+                # 한국어 번역
+                logger.info("한국어 번역 중...")
+                translated_title = self._translate_abstract(paper['title'])
+                translated_abstract = self._translate_abstract(paper['abstract'])
+                logger.info("번역 완료")
+                
+                # 논문 내용 분석
+                logger.info("논문 내용 분석 중...")
+                analysis_result = self._analyze_paper_content(paper['title'], paper['abstract'])
+                logger.info("분석 완료")
+                
+                # 결과 저장
+                analyzed_paper = {
+                    **paper,
+                    'translated_title': translated_title,
+                    'translated_abstract': translated_abstract,
+                    'analysis': analysis_result
+                }
+                
+                # 캐시에 저장
+                self._save_to_cache(paper_id, analyzed_paper)
+                
+                analyzed_papers.append(analyzed_paper)
+            
+            return analyzed_papers
+            
+        except Exception as e:
+            logger.error(f"논문 분석 중 오류 발생: {e}")
+            return papers 
