@@ -44,16 +44,27 @@ def get_papers() -> List[Dict]:
         
         # 검색어 리스트
         search_terms = [
-            'CO2 reduction',
-            'CO2RR',
-            'carbon dioxide reduction',
-            'electrochemical CO2',
-            'CO2 electroreduction',
-            'CO2 conversion',
-            'electrocatalytic CO2',
-            'electrochemical carbon dioxide',
-            'CO2 electrolysis',
-            'carbon dioxide electrolysis'
+            # 핵심 검색어
+            '"CO2 reduction"',
+            '"CO2 electroreduction"',
+            '"CO2 electrocatalysis"',
+            
+            # 촉매 관련
+            '"CO2 reduction catalyst"',
+            '"CO2 electrocatalyst"',
+            '"CO2 reduction Cu"',
+            '"CO2 reduction Ag"',
+            '"CO2 reduction Au"',
+            
+            # 메커니즘 관련
+            '"CO2 reduction mechanism"',
+            '"CO2 reduction HER"',
+            '"CO2 reduction selectivity"',
+            
+            # 성능 관련
+            '"CO2 reduction efficiency"',
+            '"CO2 reduction current density"',
+            '"CO2 reduction stability"'
         ]
         
         all_papers = []
@@ -68,7 +79,7 @@ def get_papers() -> List[Dict]:
                 "skip": 0,
                 "limit": 50,
                 "sort": "PUBLISHED_DATE_DESC",
-                "searchDateFrom": (datetime.datetime.now(pytz.UTC) - datetime.timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "searchDateFrom": (datetime.datetime.now(pytz.UTC) - datetime.timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%SZ"),
                 "searchDateTo": datetime.datetime.now(pytz.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
             }
             

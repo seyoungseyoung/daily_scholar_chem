@@ -3,12 +3,47 @@
 """
 
 import os
+import logging
+from pathlib import Path
 from dotenv import load_dotenv
 
 # 환경 변수 로드
 load_dotenv()
 
-# DeepSeek API 설정
+# 기본 디렉토리 설정
+BASE_DIR = Path(__file__).parent.parent
+DATA_DIR = BASE_DIR / 'data'
+LOG_DIR = DATA_DIR / 'logs'
+
+# 디렉토리 생성
+for directory in [DATA_DIR, LOG_DIR]:
+    directory.mkdir(parents=True, exist_ok=True)
+
+# 로깅 설정
+def setup_logging():
+    """로깅 설정을 초기화합니다."""
+    log_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    log_file = LOG_DIR / 'daily_scholar.log'
+    
+    # 루트 로거 설정
+    logging.basicConfig(
+        level=logging.INFO,
+        format=log_format,
+        handlers=[
+            logging.StreamHandler(),
+            logging.FileHandler(log_file, encoding='utf-8')
+        ]
+    )
+    
+    # 모듈별 로거 설정
+    for module in ['paper_analyzer', 'arxiv_collector', 'rank_papers', 'analysis_manager']:
+        module_logger = logging.getLogger(module)
+        module_logger.setLevel(logging.INFO)
+        module_logger.propagate = False
+        module_logger.addHandler(logging.StreamHandler())
+        module_logger.addHandler(logging.FileHandler(log_file, encoding='utf-8'))
+
+# API 설정
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions"
 
@@ -105,4 +140,7 @@ ANALYSIS_PROMPTS = {
 
 번역문을 반환해주세요.
 """
-} 
+}
+
+# 로깅 초기화
+setup_logging() 

@@ -5,8 +5,8 @@ import time
 import logging
 import os
 from pathlib import Path
-from config import DEEPSEEK_API_KEY, DEEPSEEK_API_URL, ANALYSIS_PROMPTS
-from datetime import datetime
+from config import DEEPSEEK_API_KEY, DEEPSEEK_API_URL, ANALYSIS_PROMPTS, DATA_DIR
+from datetime import datetime, timedelta
 
 # 로깅 설정
 logger = logging.getLogger('paper_analyzer')
@@ -20,7 +20,7 @@ logger.addHandler(handler)
 logger.setLevel(logging.INFO)
 
 class PaperAnalyzer:
-    def __init__(self):
+    def __init__(self, cache_expiry_days: int = 7):
         if not DEEPSEEK_API_KEY:
             raise ValueError("DEEPSEEK_API_KEY 환경 변수가 설정되지 않았습니다.")
             
@@ -29,68 +29,75 @@ class PaperAnalyzer:
             "Content-Type": "application/json"
         }
         
-        # 캐시 디렉토리 설정
-        self.base_dir = Path(__file__).parent.parent.parent
-        self.cache_dir = self.base_dir / 'data' / 'cache'
+        # 캐시 설정
+        self.cache_dir = DATA_DIR / 'cache'
+        self.cache_expiry_days = cache_expiry_days
+        self._init_cache()
+        
+        # 메모리 캐시 초기화
+        self.cache = {}
+        logger.info("메모리 캐시가 초기화되었습니다.")
+    
+    def _init_cache(self):
+        """캐시 디렉토리를 초기화합니다."""
         try:
             self.cache_dir.mkdir(parents=True, exist_ok=True)
             logger.info(f"캐시 디렉토리가 생성되었습니다: {self.cache_dir}")
         except Exception as e:
             logger.error(f"캐시 디렉토리 생성 중 오류 발생: {e}")
             raise
-        
-        # 메모리 캐시 초기화
-        self.cache = {}
-        logger.info("메모리 캐시가 초기화되었습니다.")
     
     def _get_cache_path(self, paper_id: str) -> Path:
         """캐시 파일 경로를 반환합니다."""
         return self.cache_dir / f"{paper_id}.json"
     
-    def _load_from_cache(self, paper_id: str) -> Dict:
-        """캐시에서 논문 분석 결과를 로드합니다."""
-        try:
-            # 메모리 캐시 확인
-            if paper_id in self.cache:
-                logger.debug(f"메모리 캐시에서 논문 {paper_id} 로드")
-                return self.cache[paper_id]
-                
-            # 파일 캐시 확인
-            cache_path = self._get_cache_path(paper_id)
-            if cache_path.exists():
-                with open(cache_path, 'r', encoding='utf-8') as f:
-                    result = json.load(f)
-                    # 메모리 캐시에 저장
-                    self.cache[paper_id] = result
-                    logger.info(f"파일 캐시에서 논문 {paper_id} 로드")
-                    return result
-            logger.debug(f"캐시에 논문 {paper_id} 없음")
+    def _is_cache_valid(self, cache_path: Path) -> bool:
+        """캐시가 유효한지 확인합니다."""
+        if not cache_path.exists():
+            return False
+            
+        cache_time = datetime.fromtimestamp(cache_path.stat().st_mtime)
+        expiry_time = datetime.now() - timedelta(days=self.cache_expiry_days)
+        
+        return cache_time > expiry_time
+    
+    def _load_from_cache(self, paper_id: str) -> Dict[str, Any]:
+        """캐시에서 데이터를 로드합니다."""
+        cache_path = self._get_cache_path(paper_id)
+        
+        if not self._is_cache_valid(cache_path):
+            logger.debug(f"캐시가 만료되었거나 존재하지 않습니다: {paper_id}")
             return None
             
+        try:
+            with open(cache_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                logger.info(f"캐시에서 데이터를 로드했습니다: {paper_id}")
+                return data
         except Exception as e:
-            logger.error(f"캐시 로드 중 오류 발생 (paper_id: {paper_id}): {e}")
+            logger.error(f"캐시 로드 중 오류 발생: {e}")
             return None
     
-    def _save_to_cache(self, paper_id: str, result: Dict):
-        """논문 분석 결과를 캐시에 저장합니다."""
+    def _save_to_cache(self, paper_id: str, data: Dict[str, Any]):
+        """데이터를 캐시에 저장합니다."""
+        cache_path = self._get_cache_path(paper_id)
+        
         try:
-            # datetime 객체를 문자열로 변환
-            serializable_result = result.copy()
-            if isinstance(serializable_result.get('submission_date'), datetime):
-                serializable_result['submission_date'] = serializable_result['submission_date'].strftime('%Y-%m-%d')
-            
-            # 메모리 캐시에 저장
-            self.cache[paper_id] = serializable_result
-            
-            # 파일 캐시에 저장
-            cache_path = self._get_cache_path(paper_id)
             with open(cache_path, 'w', encoding='utf-8') as f:
-                json.dump(serializable_result, f, ensure_ascii=False, indent=2)
-            logger.info(f"논문 {paper_id} 분석 결과가 캐시에 저장되었습니다")
-            
+                json.dump(data, f, ensure_ascii=False, indent=2)
+            logger.info(f"데이터를 캐시에 저장했습니다: {paper_id}")
         except Exception as e:
-            logger.error(f"캐시 저장 중 오류 발생 (paper_id: {paper_id}): {e}")
-            # 캐시 저장 실패는 치명적 오류가 아니므로 계속 진행
+            logger.error(f"캐시 저장 중 오류 발생: {e}")
+    
+    def _cleanup_cache(self):
+        """만료된 캐시 파일을 정리합니다."""
+        try:
+            for cache_file in self.cache_dir.glob('*.json'):
+                if not self._is_cache_valid(cache_file):
+                    cache_file.unlink()
+                    logger.info(f"만료된 캐시 파일을 삭제했습니다: {cache_file}")
+        except Exception as e:
+            logger.error(f"캐시 정리 중 오류 발생: {e}")
     
     def _call_api(self, prompt: str, model: str = "deepseek-chat") -> str:
         """DeepSeek API를 호출하여 응답을 받아옵니다."""

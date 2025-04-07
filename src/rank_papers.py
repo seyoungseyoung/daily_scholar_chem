@@ -1,12 +1,13 @@
 import arxiv
 import datetime
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import pandas as pd
 import pytz
 import time
 import os
 import logging
 from paper_analyzer import PaperAnalyzer
+from config import DATA_DIR
 
 # 로깅 설정
 logger = logging.getLogger('rank_papers')
@@ -22,74 +23,106 @@ class PaperQualityAnalyzer:
             'content_metrics': 0.2    # 내용 관련 지표
         }
     
-    def analyze_paper(self, paper: Dict) -> float:
+    def analyze_paper(self, paper: Dict[str, Any]) -> float:
+        """논문의 품질을 분석하고 점수를 반환합니다."""
         try:
+            if not paper:
+                logger.error("논문 데이터가 없습니다.")
+                return 0.0
+                
             score = 0.0
             
             # 1. 저자 수 점수 (최대 2점)
+            author_score = self._calculate_author_score(paper)
+            score += author_score * self.quality_indicators['author_metrics']
+            
+            # 2. 카테고리 관련성 점수 (최대 2점)
+            category_score = self._calculate_category_score(paper)
+            score += category_score * self.quality_indicators['paper_metrics']
+            
+            # 3. 키워드 관련성 점수 (최대 2점)
+            keyword_score = self._calculate_keyword_score(paper)
+            score += keyword_score * self.quality_indicators['paper_metrics']
+            
+            # 4. 초록 길이 점수 (최대 2점)
+            abstract_score = self._calculate_abstract_score(paper)
+            score += abstract_score * self.quality_indicators['content_metrics']
+            
+            # 5. 시간 관련 점수 (최대 2점)
+            time_score = self._calculate_time_score(paper)
+            score += time_score * self.quality_indicators['time_metrics']
+            
+            logger.info(f"논문 '{paper.get('title', 'N/A')}'의 품질 점수: {score:.2f}")
+            return score
+            
+        except Exception as e:
+            logger.error(f"논문 품질 분석 중 오류 발생: {e}")
+            return 0.0
+    
+    def _calculate_author_score(self, paper: Dict[str, Any]) -> float:
+        """저자 관련 점수를 계산합니다."""
+        try:
             authors = paper.get('authors', [])
             if isinstance(authors, list):
                 author_count = len(authors)
             else:
                 author_count = len(authors.split(',')) if isinstance(authors, str) else 0
-            score += min(author_count * 0.2, 2.0)
-            
-            # 2. 카테고리 관련성 점수 (최대 2점)
+            return min(author_count * 0.2, 2.0)
+        except Exception as e:
+            logger.error(f"저자 점수 계산 중 오류 발생: {e}")
+            return 0.0
+    
+    def _calculate_category_score(self, paper: Dict[str, Any]) -> float:
+        """카테고리 관련 점수를 계산합니다."""
+        try:
             categories = paper.get('categories', [])
             if isinstance(categories, list):
                 category_count = len(categories)
             else:
                 category_count = len(categories.split(',')) if isinstance(categories, str) else 0
-            score += min(category_count * 0.4, 2.0)
-            
-            # 3. 키워드 관련성 점수 (최대 2점)
+            return min(category_count * 0.4, 2.0)
+        except Exception as e:
+            logger.error(f"카테고리 점수 계산 중 오류 발생: {e}")
+            return 0.0
+    
+    def _calculate_keyword_score(self, paper: Dict[str, Any]) -> float:
+        """키워드 관련 점수를 계산합니다."""
+        try:
             keywords = paper.get('keywords', [])
             if isinstance(keywords, list):
                 keyword_count = len(keywords)
             else:
                 keyword_count = len(keywords.split(',')) if isinstance(keywords, str) else 0
-            score += min(keyword_count * 0.2, 2.0)
-            
-            # 4. 초록 길이 점수 (최대 2점)
-            abstract = paper.get('abstract', '')
-            if abstract:
-                abstract_length = len(abstract.split())
-                score += min(abstract_length * 0.01, 2.0)
-            
-            # 5. 메트릭 점수 (최대 2점)
-            metrics = paper.get('metrics', {})
-            if metrics:
-                views = metrics.get('abstract_views', 0)
-                downloads = metrics.get('content_downloads', 0)
-                citations = metrics.get('citations', 0)
-                score += min((views * 0.0001 + downloads * 0.0002 + citations * 0.1), 2.0)
-            
-            return round(score, 2)
-            
+            return min(keyword_count * 0.2, 2.0)
         except Exception as e:
-            self.logger.error(f"논문 품질 분석 중 오류 발생: {e}")
+            logger.error(f"키워드 점수 계산 중 오류 발생: {e}")
             return 0.0
     
-    def _calculate_author_score(self, paper) -> float:
-        score = 0
-        # 저자 수 평가 (1-5명이 최적)
-        author_count = len(paper.authors)
-        if 1 <= author_count <= 3:
-            score += 1.0
-        elif 4 <= author_count <= 5:
-            score += 0.8
-        elif 6 <= author_count <= 8:
-            score += 0.5
-        else:
-            score += 0.3
-            
-        # 저자 정보 완성도
-        if all(hasattr(author, 'name') for author in paper.authors):
-            score += 0.5
-        elif any(hasattr(author, 'name') for author in paper.authors):
-            score += 0.3
-            
-        return score
+    def _calculate_abstract_score(self, paper: Dict[str, Any]) -> float:
+        """초록 관련 점수를 계산합니다."""
+        try:
+            abstract = paper.get('abstract', '')
+            word_count = len(abstract.split())
+            return min(word_count * 0.01, 2.0)
+        except Exception as e:
+            logger.error(f"초록 점수 계산 중 오류 발생: {e}")
+            return 0.0
+    
+    def _calculate_time_score(self, paper: Dict[str, Any]) -> float:
+        """시간 관련 점수를 계산합니다."""
+        try:
+            submission_date = paper.get('submission_date')
+            if not submission_date:
+                return 0.0
+                
+            if isinstance(submission_date, str):
+                submission_date = datetime.fromisoformat(submission_date)
+                
+            days_since_submission = (datetime.now() - submission_date).days
+            return max(2.0 - (days_since_submission * 0.01), 0.0)
+        except Exception as e:
+            logger.error(f"시간 점수 계산 중 오류 발생: {e}")
+            return 0.0
     
     def _calculate_paper_score(self, paper) -> float:
         score = 0
@@ -126,31 +159,6 @@ class PaperQualityAnalyzer:
         else:
             score += 0.1
             
-        return score
-    
-    def _calculate_time_score(self, paper) -> float:
-        score = 0
-        current_time = datetime.datetime.now(pytz.UTC)
-        
-        # 최근성 평가
-        time_diff = current_time - paper.updated
-        if time_diff.days <= 1:
-            score += 0.5
-        elif time_diff.days <= 3:
-            score += 0.4
-        elif time_diff.days <= 5:
-            score += 0.3
-        else:
-            score += 0.2
-            
-        # 버전 관리 평가
-        if paper.published != paper.updated:
-            update_diff = paper.updated - paper.published
-            if update_diff.days <= 3:
-                score += 0.5
-            else:
-                score += 0.3
-                
         return score
     
     def _calculate_content_score(self, paper) -> float:
