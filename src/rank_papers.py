@@ -116,7 +116,15 @@ class PaperQualityAnalyzer:
                 return 0.0
                 
             if isinstance(submission_date, str):
-                submission_date = datetime.fromisoformat(submission_date)
+                try:
+                    # ISO 형식인 경우
+                    submission_date = datetime.fromisoformat(submission_date)
+                except ValueError:
+                    try:
+                        # 다른 형식인 경우
+                        submission_date = datetime.strptime(submission_date, '%Y-%m-%d')
+                    except ValueError:
+                        return 0.0
                 
             days_since_submission = (datetime.now() - submission_date).days
             return max(2.0 - (days_since_submission * 0.01), 0.0)

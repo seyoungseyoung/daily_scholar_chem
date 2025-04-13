@@ -79,7 +79,7 @@ def get_papers() -> List[Dict]:
                 "skip": 0,
                 "limit": 50,
                 "sort": "PUBLISHED_DATE_DESC",
-                "searchDateFrom": (datetime.datetime.now(pytz.UTC) - datetime.timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "searchDateFrom": (datetime.datetime.now(pytz.UTC) - datetime.timedelta(days=3)).strftime("%Y-%m-%dT%H:%M:%SZ"),
                 "searchDateTo": datetime.datetime.now(pytz.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
             }
             
@@ -193,40 +193,29 @@ def save_top10(papers: List[Dict], analyzer: PaperQualityAnalyzer):
 def main():
     # 한국 시간대 설정
     korea_tz = pytz.timezone('Asia/Seoul')
+    current_time = datetime.datetime.now(korea_tz)
+    logger.info(f"작업 시작 시간: {current_time.strftime('%Y-%m-%d %H:%M:%S')}")
     
-    def run_daily_task():
-        current_time = datetime.datetime.now(korea_tz)
-        logger.info(f"작업 시작 시간: {current_time.strftime('%Y-%m-%d %H:%M:%S')}")
-        
-        try:
-            # 논문 수집
-            papers = get_papers()
-            if papers:
-                # 논문 분석
-                analyzed_papers = paper_analyzer.analyze_papers(papers)
-                
-                # Top 10 저장
-                analyzer = PaperQualityAnalyzer()
-                save_top10(analyzed_papers, analyzer)
-                
-                # 이메일 전송
-                email_sender = EmailSender()
-                email_sender.send_report(analyzed_papers)
-                
-                logger.info("작업이 성공적으로 완료되었습니다.")
-            else:
-                logger.warning("수집된 논문이 없어 작업을 건너뜁니다.")
-        except Exception as e:
-            logger.error(f"작업 실행 중 오류 발생: {str(e)}")
-
-    # 매일 한국시간 3시에 실행되도록 설정
-    schedule.every().day.at("03:00").do(run_daily_task)
-    
-    logger.info("스케줄러가 시작되었습니다. 매일 한국시간 3시에 작업이 실행됩니다.")
-    
-    while True:
-        schedule.run_pending()
-        time.sleep(60)  # 1분마다 체크
+    try:
+        # 논문 수집
+        papers = get_papers()
+        if papers:
+            # 논문 분석
+            analyzed_papers = paper_analyzer.analyze_papers(papers)
+            
+            # Top 10 저장
+            analyzer = PaperQualityAnalyzer()
+            save_top10(analyzed_papers, analyzer)
+            
+            # 이메일 전송
+            email_sender = EmailSender()
+            email_sender.send_report(analyzed_papers)
+            
+            logger.info("작업이 성공적으로 완료되었습니다.")
+        else:
+            logger.warning("수집된 논문이 없어 작업을 건너뜁니다.")
+    except Exception as e:
+        logger.error(f"작업 실행 중 오류 발생: {str(e)}")
 
 if __name__ == "__main__":
     main() 

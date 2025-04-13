@@ -110,11 +110,11 @@ class EmailSender:
     def send_report(self, papers: List[Dict[str, Any]]) -> bool:
         """Send the paper report to all recipients."""
         if not self.recipient_email:
-            print("No recipients found. Skipping email sending.")
+            logger.warning("No recipients found. Skipping email sending.")
             return False
         
         if not all([self.smtp_username, self.smtp_password]):
-            print("SMTP credentials not configured. Skipping email sending.")
+            logger.warning("SMTP credentials not configured. Skipping email sending.")
             return False
         
         try:
@@ -124,5 +124,5 @@ class EmailSender:
             return True
             
         except Exception as e:
-            print(f"Failed to send email: {str(e)}")
+            logger.error(f"Failed to send email: {str(e)}")
             return False 
